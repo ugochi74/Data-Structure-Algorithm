@@ -1,6 +1,10 @@
+# import copy
+
 def add_tag(profile, tag):
+    # updated  = copy.deepcopy(profile)
+    #updated["tags"].append(tag)
     updated = profile.copy()
-    updated["tags"] = profile["tags"].copy
+    updated["tags"] = updated["tags"] + [tag]
     return updated
 original = {"name": "Ada", "tags": ["python"]}
 changed = add_tag(original, "testing")
