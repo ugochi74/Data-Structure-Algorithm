@@ -63,10 +63,15 @@ class UndoRedoEditor:
 
 # --- Demo, matching your curriculum's expected output ---
 editor = UndoRedoEditor()
-editor.type("Hello")
-editor.type("Hello World")
-editor.type("Hello World!")
+editor.type("white")
+editor.type("blue")
+editor.type("red")
+editor.type("green")
+# editor.type("Hello")
+# editor.type("Hello world")
+# editor.type("Hello world")
 
-editor.undo()   # → Hello World
-editor.undo()   # → Hello
-editor.redo()   # → Hello World
+editor.undo()   # Hello World
+editor.undo()   # Hello
+editor.redo()   # Hello World
+editor.redo()
