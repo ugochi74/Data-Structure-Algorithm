@@ -1,14 +1,16 @@
-import unittest
 
-from data import resources, fellows, borrow_records
+import unittest
+from unittest.mock import patch
+
+from data import resources, borrow_records
 from resources import find_resource
 from borrowing import borrow_resource
-from reports import show_reports
 
 
-class TestCampusSystem(unittest.TestCase):
+class TestCampusResourceSystem(unittest.TestCase):
 
     def setUp(self):
+        # Reset data before every test
         resources.clear()
         borrow_records.clear()
 
@@ -39,68 +41,74 @@ class TestCampusSystem(unittest.TestCase):
     def test_find_resource(self):
         resource = find_resource("R001")
 
-        self.assertIsNotNone(resource)
-        self.assertEqual(resource["name"], "Laptop")
+        assert resource is not None
+        assert resource["name"] == "Laptop"
+        assert resource["available"] == 10
 
-    def test_find_unknown_resource(self):
+    def test_unknown_resource(self):
         resource = find_resource("R999")
 
-        self.assertIsNone(resource)
+        assert resource is None
 
-    def test_borrow_reduces_stock(self):
+    @patch("builtins.input", side_effect=["F001", "R001", "2"])
+    def test_borrow_resource(self, mock_input):
+        result = borrow_resource()
+
         resource = find_resource("R001")
 
-        quantity = 2
+        assert result is True
+        assert resource["available"] == 8
 
-        self.assertGreaterEqual(
-            resource["available"],
-            quantity
-        )
+        assert len(borrow_records) == 1
+        assert borrow_records[0]["fellow_id"] == "F001"
+        assert borrow_records[0]["resource_id"] == "R001"
+        assert borrow_records[0]["quantity"] == 2
 
-        resource["available"] -= quantity
+    @patch("builtins.input", side_effect=["F003", "R003", "4"])
+    def test_cannot_borrow_more_than_available(self, mock_input):
+        result = borrow_resource()
 
-        self.assertEqual(
-            resource["available"],
-            8
-        )
-
-    def test_cannot_borrow_more_than_available(self):
         resource = find_resource("R003")
 
-        requested = 4
+        # Borrowing should fail
+        assert result is False
 
-        self.assertGreater(
-            requested,
-            resource["available"]
-        )
+        # Stock must remain unchanged
+        assert resource["available"] == 3
 
-        old_stock = resource["available"]
+        # No borrowing record should be created
+        assert len(borrow_records) == 0
 
-        if requested > resource["available"]:
-            pass
+    @patch("builtins.input", side_effect=["F001", "R001", "0"])
+    def test_quantity_must_be_positive(self, mock_input):
+        result = borrow_resource()
 
-        self.assertEqual(
-            resource["available"],
-            old_stock
-        )
+        resource = find_resource("R001")
 
-    def test_resource_total_matches_starting_stock(self):
-        resource = find_resource("R002")
+        assert result is False
+        assert resource["available"] == 10
+        assert len(borrow_records) == 0
 
-        self.assertEqual(
-            resource["total"],
-            5
-        )
+    @patch("builtins.input", side_effect=["F999", "R001", "2"])
+    def test_invalid_fellow(self, mock_input):
+        result = borrow_resource()
 
-        self.assertEqual(
-            resource["available"],
-            5
-        )
+        resource = find_resource("R001")
 
-    def test_fellows_exist(self):
-        self.assertIn("F001", fellows)
-        self.assertIn("F002", fellows)
-        self.assertIn("F003", fellows)
+        assert result is False
+        assert resource["available"] == 10
+        assert len(borrow_records) == 0
+
+    def test_starting_resources(self):
+        assert len(resources) == 3
+
+        laptop = find_resource("R001")
+        keyboard = find_resource("R002")
+        headset = find_resource("R003")
+
+        assert laptop["total"] == 10
+        assert keyboard["total"] == 5
+        assert headset["total"] == 3
 
 
 if __name__ == "__main__":
